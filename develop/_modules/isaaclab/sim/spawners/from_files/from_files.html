@@ -651,7 +651,10 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">fcntl</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pxr</span><span class="w"> </span><span class="kn">import</span> <span class="n">Gf</span><span class="p">,</span> <span class="n">Sdf</span><span class="p">,</span> <span class="n">Usd</span><span class="p">,</span> <span class="n">UsdGeom</span>
@@ -954,31 +957,38 @@
 <span class="sd">    Raises:</span>
 <span class="sd">        FileNotFoundError: If the USD file does not exist at the given path.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># check file path exists (supports local paths, S3, HTTP/HTTPS URLs)</span>
-    <span class="c1"># check_file_path returns: 0 (not found), 1 (local), 2 (remote)</span>
+    <span class="c1"># In distributed training, serialize asset download and USD stage composition</span>
+    <span class="c1"># across ranks to prevent file I/O races. Concurrent mmap reads/writes on</span>
+    <span class="c1"># the same cached USD files cause segfaults in Sdf_CrateFile::_MmapStream::Read.</span>
+    <span class="n">_world_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;LOCAL_WORLD_SIZE&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">))</span>
+
     <span class="n">file_status</span> <span class="o">=</span> <span class="n">check_file_path</span><span class="p">(</span><span class="n">usd_path</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">file_status</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;USD file not found at path: &#39;</span><span class="si">{</span><span class="n">usd_path</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
 
-    <span class="c1"># Download remote files (S3, HTTP, HTTPS) to local cache</span>
-    <span class="k">if</span> <span class="n">file_status</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="n">usd_path</span> <span class="o">=</span> <span class="n">retrieve_file_path</span><span class="p">(</span><span class="n">usd_path</span><span class="p">,</span> <span class="n">force_download</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="c1"># Obtain current stage</span>
-    <span class="n">stage</span> <span class="o">=</span> <span class="n">get_current_stage</span><span class="p">()</span>
-    <span class="c1"># spawn asset if it doesn&#39;t exist.</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">stage</span><span class="o">.</span><span class="n">GetPrimAtPath</span><span class="p">(</span><span class="n">prim_path</span><span class="p">)</span><span class="o">.</span><span class="n">IsValid</span><span class="p">():</span>
-        <span class="c1"># add prim as reference to stage</span>
-        <span class="n">create_prim</span><span class="p">(</span>
-            <span class="n">prim_path</span><span class="p">,</span>
-            <span class="n">usd_path</span><span class="o">=</span><span class="n">usd_path</span><span class="p">,</span>
-            <span class="n">translation</span><span class="o">=</span><span class="n">translation</span><span class="p">,</span>
-            <span class="n">orientation</span><span class="o">=</span><span class="n">orientation</span><span class="p">,</span>
-            <span class="n">scale</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
-            <span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;A prim already exists at prim path: &#39;</span><span class="si">{</span><span class="n">prim_path</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_world_size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">lock_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">(),</span> <span class="s2">&quot;isaaclab_usd_spawn.lock&quot;</span><span class="p">)</span>
+        <span class="n">lock_fd</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">lock_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>  <span class="c1"># noqa: SIM115</span>
+        <span class="n">fcntl</span><span class="o">.</span><span class="n">flock</span><span class="p">(</span><span class="n">lock_fd</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">LOCK_EX</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">file_status</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">usd_path</span> <span class="o">=</span> <span class="n">retrieve_file_path</span><span class="p">(</span><span class="n">usd_path</span><span class="p">,</span> <span class="n">force_download</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">stage</span> <span class="o">=</span> <span class="n">get_current_stage</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">stage</span><span class="o">.</span><span class="n">GetPrimAtPath</span><span class="p">(</span><span class="n">prim_path</span><span class="p">)</span><span class="o">.</span><span class="n">IsValid</span><span class="p">():</span>
+            <span class="n">create_prim</span><span class="p">(</span>
+                <span class="n">prim_path</span><span class="p">,</span>
+                <span class="n">usd_path</span><span class="o">=</span><span class="n">usd_path</span><span class="p">,</span>
+                <span class="n">translation</span><span class="o">=</span><span class="n">translation</span><span class="p">,</span>
+                <span class="n">orientation</span><span class="o">=</span><span class="n">orientation</span><span class="p">,</span>
+                <span class="n">scale</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
+                <span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;A prim already exists at prim path: &#39;</span><span class="si">{</span><span class="n">prim_path</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">_world_size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">fcntl</span><span class="o">.</span><span class="n">flock</span><span class="p">(</span><span class="n">lock_fd</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">LOCK_UN</span><span class="p">)</span>
+            <span class="n">lock_fd</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="c1"># modify variants</span>
     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;variants&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">cfg</span><span class="o">.</span><span class="n">variants</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
