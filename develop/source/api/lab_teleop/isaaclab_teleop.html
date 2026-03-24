@@ -63,7 +63,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="3.0.0" />
-    <meta name="docbuild:last-update" content="Mar 20, 2026"/>
+    <meta name="docbuild:last-update" content="Mar 24, 2026"/>
   </head>
   
   
@@ -1297,7 +1297,7 @@ that can be triggered via XR controller buttons or the message bus.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="isaaclab_teleop.IsaacTeleopDevice.advance">
-<span class="sig-name descname"><span class="pre">advance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_T_world</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">np.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><span class="pre">torch.Tensor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">SupportsDLPack</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><span class="pre">torch.Tensor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/isaaclab_teleop/isaac_teleop_device.html#IsaacTeleopDevice.advance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#isaaclab_teleop.IsaacTeleopDevice.advance" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">advance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_T_world</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">np.ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">torch.Tensor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">SupportsDLPack</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><span class="pre">torch.Tensor</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../_modules/isaaclab_teleop/isaac_teleop_device.html#IsaacTeleopDevice.advance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#isaaclab_teleop.IsaacTeleopDevice.advance" title="Link to this definition">#</a></dt>
 <dd><p>Process current device state and return control commands.</p>
 <p>If the IsaacTeleop session has not been started yet (because the OpenXR
 handles were not available at <code class="docutils literal notranslate"><span class="pre">__enter__</span></code> time), this method will
@@ -1316,7 +1316,7 @@ controller receives end-effector poses in the robot’s base
 link frame.</p>
 <p>Accepts any object supporting the DLPack buffer protocol
 (<code class="docutils literal notranslate"><span class="pre">__dlpack__</span></code>), including <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a>,
-<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></a>, and <code class="docutils literal notranslate"><span class="pre">wp.array</span></code>.</p>
+<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></a>, and <code class="docutils literal notranslate"><span class="pre">wp.array</span></code>.</p>
 <p>When <code class="docutils literal notranslate"><span class="pre">None</span></code> and
 <a class="reference internal" href="#isaaclab_teleop.IsaacTeleopCfg.target_frame_prim_path" title="isaaclab_teleop.IsaacTeleopCfg.target_frame_prim_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target_frame_prim_path</span></code></a> is set, the
 transform is computed automatically by reading the prim’s
@@ -1324,7 +1324,7 @@ world matrix from Fabric and inverting it.</p>
 </p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A flattened action <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></a> ready for the Isaac Lab
+<dd class="field-even"><p>A flattened action <a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></a> ready for the Isaac Lab
 environment, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if the session has not started yet
 (e.g. still waiting for the user to start AR).</p>
 </dd>
@@ -1588,7 +1588,7 @@ By The Isaac Lab Project Developers.
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Mar 20, 2026.
+  Last updated on Mar 24, 2026.
   <br/>
 </p>
   </div>
